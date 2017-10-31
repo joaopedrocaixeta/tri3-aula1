@@ -10,6 +10,9 @@ namespace UnityStandardAssets._2D
         public float lookAheadFactor = 3;
         public float lookAheadReturnSpeed = 0.5f;
         public float lookAheadMoveThreshold = 0.1f;
+        public float yMin = -3f;
+        public float yMax = 5.15f;
+        public float xMin = -11f;
 
         private float m_OffsetZ;
         private Vector3 m_LastTargetPosition;
@@ -19,9 +22,15 @@ namespace UnityStandardAssets._2D
         // Use this for initialization
         private void Start()
         {
+            if (target != null){
+                updateVariables();
+            }
+            transform.parent = null;
+        }
+
+        void updateVariables () {
             m_LastTargetPosition = target.position;
             m_OffsetZ = (transform.position - target.position).z;
-            transform.parent = null;
         }
 
 
@@ -29,25 +38,43 @@ namespace UnityStandardAssets._2D
         private void Update()
         {
             // only update lookahead pos if accelerating or changed direction
-            float xMoveDelta = (target.position - m_LastTargetPosition).x;
+            if (target != null) {
+                float xMoveDelta = (target.position - m_LastTargetPosition).x;
 
-            bool updateLookAheadTarget = Mathf.Abs(xMoveDelta) > lookAheadMoveThreshold;
+                bool updateLookAheadTarget = Mathf.Abs(xMoveDelta) > lookAheadMoveThreshold;
 
-            if (updateLookAheadTarget)
-            {
-                m_LookAheadPos = lookAheadFactor*Vector3.right*Mathf.Sign(xMoveDelta);
+                if (updateLookAheadTarget)
+                {
+                    m_LookAheadPos = lookAheadFactor*Vector3.right*Mathf.Sign(xMoveDelta);
+                }
+                else
+                {
+                    m_LookAheadPos = Vector3.MoveTowards(m_LookAheadPos, Vector3.zero, Time.deltaTime*lookAheadReturnSpeed);
+                }
+
+                Vector3 aheadTargetPos = target.position + m_LookAheadPos + Vector3.forward*m_OffsetZ;
+                Vector3 newPos = Vector3.SmoothDamp(transform.position, aheadTargetPos, ref m_CurrentVelocity, damping);
+                if (newPos.y < yMin){
+                    newPos = new Vector3 (newPos.x, yMin, newPos.z);
+                }
+                if (newPos.x < xMin){
+                    newPos = new Vector3 (xMin, newPos.y, newPos.z);
+                }
+                if (newPos.y > yMax){
+                    newPos = new Vector3 (newPos.x, yMax, newPos.z);
+                }
+
+                transform.position = newPos;
+
+                m_LastTargetPosition = target.position;
             }
-            else
-            {
-                m_LookAheadPos = Vector3.MoveTowards(m_LookAheadPos, Vector3.zero, Time.deltaTime*lookAheadReturnSpeed);
+            else {
+                GameObject obj = GameObject.FindGameObjectWithTag("Player");
+                if (obj != null){
+                    target = obj.transform;
+                    updateVariables();
+                }
             }
-
-            Vector3 aheadTargetPos = target.position + m_LookAheadPos + Vector3.forward*m_OffsetZ;
-            Vector3 newPos = Vector3.SmoothDamp(transform.position, aheadTargetPos, ref m_CurrentVelocity, damping);
-
-            transform.position = newPos;
-
-            m_LastTargetPosition = target.position;
         }
     }
 }
