@@ -39,7 +39,7 @@ public class UI {
 		public Text txtTimer;
 
 		[Header("Other")]
-		public GameObject LevelCompletePanel;
+		public GameObject levelCompletePanel;
 	}
 
 
